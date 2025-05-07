@@ -1,5 +1,6 @@
 from django.http import JsonResponse, HttpRequest
 from django.views import View
+from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -30,6 +31,7 @@ class TodoApi(View):
             title=reqTodo['title'],
             description= reqTodo['description']
         )
+        print(reqTodo)
         return JsonResponse({'message': 'post request made', 'todo': newTodo.to_dict()})
     
     def delete(self , request: HttpRequest, *args , **kwargs):
@@ -47,4 +49,7 @@ class TodoApi(View):
         todo.save()
 
         return JsonResponse({'message': f"updated todo with id {todoId}", "updated todo" : todo.to_dict() })
+    
+def todo_page(request):
+    return render(request,'todo_app.html')
     

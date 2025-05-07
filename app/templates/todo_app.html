@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Todo List</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css" />
+  <style>
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5em;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 0.5em;
+    }
+    .actions button {
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Todo List</h2>
+
+    <form id="todo-form">
+      <input type="text" id="title" placeholder="Title" required />
+      <input type="text" id="description" placeholder="Description" />
+      <button type="submit">Add Todo</button>
+    </form>
+
+    <div id="todo-list"></div>
+  </div>
+
+  <script>
+    const todoList = document.getElementById("todo-list");
+    const todoForm = document.getElementById("todo-form");
+
+    // Load all todos
+    async function loadTodos() {
+      const res = await fetch("/todos/api");
+      const todos = await res.json();
+      todoList.innerHTML = "";
+
+      todos.forEach(todo => {
+        const div = document.createElement("div");
+        div.className = "todo-item";
+        div.innerHTML = `
+          <div>
+            <strong>${todo.title}</strong><br/>
+            <small>${todo.description}</small>
+          </div>
+          <div class="actions">
+            <button onclick="editTodo('${todo.id}')">Edit</button>
+            <button onclick="deleteTodo('${todo.id}')">Delete</button>
+          </div>
+        `;
+        todoList.appendChild(div);
+      });
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    }
+
+
+    // Add new todo
+    todoForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const title = document.getElementById("title").value;
+      const description = document.getElementById("description").value;
+
+      await fetch("/todos/api/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" ,
+          "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({ title, description }),
+      });
+
+      todoForm.reset();
+      loadTodos();
+    });
+
+    // Delete todo
+    async function deleteTodo(id) {
+      await fetch(`/todos/api/${id}`, { method: "DELETE" ,
+        headers: {
+          "X-CSRFToken": getCSRFToken()
+        }
+      }
+      );
+      loadTodos();
+    }
+
+    // Edit todo
+    async function editTodo(id) {
+      const newTitle = prompt("New title:");
+      const newDesc = prompt("New description:");
+      if (!newTitle) return;
+
+      await fetch(`/todos/api/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json",
+          "X-CSRFToken": getCSRFToken()
+         },
+        body: JSON.stringify({ title: newTitle, description: newDesc }),
+      });
+
+      loadTodos();
+    }
+
+    loadTodos();
+  </script>
+</body>
+</html>
